@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance System Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#020817', 
+                        card: '#090f1e',       
+                        border: '#1e293b',     
+                        primary: '#3b82f6',    
+                        muted: '#64748b'
+                    },
+                    fontFamily: { sans: ['Inter', 'Segoe UI', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #020817; color: #f8fafc; overflow: hidden; }
+        .module-content { display: none; }
+        .module-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="flex h-screen w-full antialiased">
+
+    <div id="login-module" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#020817]">
+        <div class="bg-card p-10 rounded-2xl w-full max-w-md shadow-2xl border border-border">
+            <div class="text-center mb-8">
+                <i class="fa-solid fa-graduation-cap text-5xl text-blue-500 mb-4"></i>
+                <h2 class="text-3xl font-bold">System Access</h2>
+                <p class="text-slate-400 mt-2">Login for specific branch</p>
+                <p class="text-xs text-blue-400 mt-1">(Username: bcca / mca / bca, Pass: admin)</p>
+            </div>
+            <input type="text" id="login-user" placeholder="Username (Branch e.g., bcca)" class="w-full bg-[#090f1e] border border-border rounded-lg px-4 py-3 mb-4 text-white focus:outline-none focus:border-blue-500 lowercase">
+            <input type="password" id="login-pass" placeholder="Password" class="w-full bg-[#090f1e] border border-border rounded-lg px-4 py-3 mb-6 text-white focus:outline-none focus:border-blue-500">
+            <button onclick="login()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition shadow-lg">Login</button>
+        </div>
+    </div>
+
+    <aside class="w-[260px] bg-[#020817] border-r border-[#1e293b] flex flex-col z-20 shrink-0">
+        <div class="h-16 flex items-center px-6 mt-2 mb-4 shrink-0">
+            <div class="bg-blue-600/20 p-2 rounded-lg mr-3">
+                <i class="fa-solid fa-graduation-cap text-blue-500"></i>
+            </div>
+            <span class="font-bold text-md tracking-wide">Attendance System</span>
+        </div>
+        
+        <div class="px-4 flex-1 overflow-y-auto">
+            <p class="text-xs font-semibold text-slate-500 mb-4 px-2">Modules</p>
+            <nav class="space-y-1" id="nav-menu">
+                <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:text-white" data-target="dashboard">
+                    <i class="fa-solid fa-border-all w-6 text-center mr-2"></i> Dashboard
+                </button>
+                <button onclick="switchTab('students')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:text-white" data-target="students">
+                    <i class="fa-solid fa-user-group w-6 text-center mr-2"></i> Students
+                </button>
+                <button onclick="switchTab('attendance')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:text-white" data-target="attendance">
+                    <i class="fa-regular fa-calendar-check w-6 text-center mr-2"></i> Attendance
+                </button>
+                <button onclick="switchTab('defaulters')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:text-white" data-target="defaulters">
+                    <i class="fa-solid fa-shield-halved w-6 text-center mr-2"></i> Defaulters
+                </button>
+                <button onclick="switchTab('reports')" class="nav-btn w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:text-white" data-target="reports">
+                    <i class="fa-regular fa-file-lines w-6 text-center mr-2"></i> Reports
+                </button>
+            </nav>
+        </div>
+
+        <div class="mt-auto p-4 mb-2 shrink-0">
+            <button onclick="logout()" class="w-full flex items-center px-3 py-2 text-sm text-red-400 hover:text-white hover:bg-red-500/10 rounded-lg transition-colors">
+                <i class="fa-solid fa-arrow-right-from-bracket w-6 text-center mr-2"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-[#020817]">
+        <header class="h-14 border-b border-[#1e293b] flex items-center px-8 shrink-0">
+            <i class="fa-solid fa-table-columns text-slate-400 mr-3 text-sm"></i>
+            <h1 id="header-title" class="text-sm font-medium text-slate-200 capitalize">Dashboard</h1>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8 bg-[#020817]">
+            
+            <div id="module-dashboard" class="module-content">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-white mb-1">Dashboard</h2>
+                    <p class="text-slate-400 text-sm">Overview of attendance system</p>
+                </div>
+
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-card border border-border rounded-xl p-5 shadow-sm">
+                        <div class="flex items-center text-slate-400 text-sm mb-2"><i class="fa-solid fa-user-group mr-2 text-blue-500"></i> Total Students</div>
+                        <div id="dash-total" class="text-3xl font-bold">0</div>
+                    </div>
+                    <div class="bg-card border border-border rounded-xl p-5 shadow-sm">
+                        <div class="flex items-center text-slate-400 text-sm mb-2"><i class="fa-solid fa-arrow-trend-up mr-2 text-green-500"></i> Overall Class Avg</div>
+                        <div id="dash-avg" class="text-3xl font-bold text-green-400">0%</div>
+                    </div>
+                    <div class="bg-card border border-border rounded-xl p-5 shadow-sm">
+                        <div class="flex items-center text-slate-400 text-sm mb-2"><i class="fa-solid fa-triangle-exclamation mr-2 text-red-500"></i> Defaulters (<50%)</div>
+                        <div id="dash-defaulters" class="text-3xl font-bold text-red-500">0</div>
+                    </div>
+                    <div class="bg-card border border-border rounded-xl p-5 shadow-sm">
+                        <div class="flex items-center text-slate-400 text-sm mb-2"><i class="fa-regular fa-calendar-check mr-2 text-yellow-500"></i> Total Lectures</div>
+                        <div id="dash-classes" class="text-3xl font-bold">0</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-card border border-border rounded-xl p-6 h-[380px]">
+                        <h3 class="font-bold mb-4">Attendance Distribution</h3>
+                        <div class="h-64 relative"><canvas id="barChart"></canvas></div>
+                    </div>
+                    <div class="bg-card border border-border rounded-xl p-6">
+                        <h3 class="font-bold flex items-center mb-4"><i class="fa-regular fa-bell text-blue-500 mr-2"></i> Recent Alerts</h3>
+                        <div id="alert-list" class="space-y-3 text-sm text-slate-400 overflow-y-auto max-h-64 pr-2">
+                           <div class="flex items-center justify-center h-48 text-slate-500 text-sm">No alerts sent yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="module-students" class="module-content">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-1">Student Management</h2>
+                        <p id="student-count" class="text-slate-400 text-sm">0 students registered</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <select id="student-subject-filter" onchange="renderStudentsTable()" class="bg-[#090f1e] border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                            <option value="All">All Subjects</option>
+                        </select>
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                            <input type="text" id="student-search-input" oninput="renderStudentsTable()" placeholder="Search students..." class="bg-[#090f1e] border border-border rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 w-64">
+                        </div>
+                        <button onclick="showAddForm()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                            <i class="fa-solid fa-plus mr-2"></i> Add
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="add-student-form" class="bg-card border border-border rounded-xl p-6 mb-6 hidden">
+                    <h3 id="form-title" class="font-bold mb-4">Register New Student</h3>
+                    <div class="grid grid-cols-4 gap-3">
+                        <input type="text" id="new-roll" placeholder="Roll No" class="bg-[#090f1e] border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <input type="text" id="new-name" placeholder="Full Name" class="bg-[#090f1e] border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <input type="text" id="new-dept" placeholder="Department" class="bg-[#090f1e] border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <input type="email" id="new-email" placeholder="Email" class="bg-[#090f1e] border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex justify-end gap-3 mt-4">
+                        <button onclick="hideAddForm()" class="bg-transparent border border-border text-slate-300 hover:bg-slate-800 px-4 py-2 rounded-lg text-sm font-medium">Cancel</button>
+                        <button id="submit-student-btn" onclick="addStudent()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Register</button>
+                    </div>
+                </div>
+
+                <div class="bg-card border border-border rounded-xl overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="border-b border-border text-slate-400">
+                            <tr><th class="px-6 py-4 font-medium">Roll No</th><th class="px-6 py-4 font-medium">Name</th><th class="px-6 py-4 font-medium">Email</th><th class="px-6 py-4 font-medium">Att. %</th><th class="px-6 py-4 font-medium text-right">Actions</th></tr>
+                        </thead>
+                        <tbody id="student-table-body" class="divide-y divide-border text-slate-300">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="module-attendance" class="module-content">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-1">Attendance Entry</h2>
+                        <p id="attendance-date-text" class="text-slate-400 text-sm">Mark attendance for today</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <select id="attendance-subject-picker" onchange="loadAttendanceForDate()" class="bg-[#090f1e] border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                            </select>
+
+                        <input type="date" id="attendance-date-picker" onchange="loadAttendanceForDate()" class="bg-[#090f1e] border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <button onclick="bulkAttendance(true)" class="bg-transparent border border-border hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                            <i class="fa-solid fa-check mr-2"></i> All Present
+                        </button>
+                        <button onclick="bulkAttendance(false)" class="bg-transparent border border-border hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                            <i class="fa-solid fa-xmark mr-2"></i> All Absent
+                        </button>
+                    </div>
+                </div>
+
+                <div id="duplicate-warning" class="bg-[#2a1a08] border border-[#78350f] text-[#d97706] px-4 py-3 rounded-lg mb-6 text-sm items-center hidden">
+                    <i class="fa-solid fa-triangle-exclamation mr-2"></i> Attendance already recorded for this subject on this date. Saving will update it.
+                </div>
+
+                <div class="bg-card border border-border rounded-xl overflow-hidden mb-4">
+                    <table class="w-full text-left text-sm">
+                        <thead class="border-b border-border text-slate-400">
+                            <tr><th class="px-6 py-4 font-medium">Roll No</th><th class="px-6 py-4 font-medium">Name</th><th class="px-6 py-4 font-medium">Department</th><th class="px-6 py-4 font-medium text-right">Status</th></tr>
+                        </thead>
+                        <tbody id="attendance-table-body" class="divide-y divide-border text-slate-300">
+                            </tbody>
+                    </table>
+                </div>
+                <button onclick="saveAttendance()" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center">
+                    <i class="fa-regular fa-floppy-disk mr-2"></i> Save Attendance
+                </button>
+            </div>
+
+            <div id="module-defaulters" class="module-content">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-1">Defaulter Detection</h2>
+                        <p id="defaulter-summary" class="text-slate-400 text-sm">0 defaulters, 0 warnings</p>
+                    </div>
+                    <select id="defaulter-subject-filter" onchange="renderDefaultersTable()" class="bg-[#090f1e] border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <option value="All">All Subjects</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-card border border-border rounded-xl p-5 shadow-sm">
+                        <div class="text-slate-400 text-sm mb-2">Defaulters (<50%)</div>
+                        <div id="stat-defaulters" class="text-3xl font-bold text-red-500">0</div>
+                    </div>
+                    <div class="bg-card border border-border rounded-xl p-5 shadow-sm">
+                        <div class="text-slate-400 text-sm mb-2">Warning (50-79%)</div>
+                        <div id="stat-warnings" class="text-3xl font-bold text-yellow-500">0</div>
+                    </div>
+                    <div class="bg-card border border-border rounded-xl p-5 shadow-sm">
+                        <div class="text-slate-400 text-sm mb-2">Safe (≥80%)</div>
+                        <div id="stat-safe" class="text-3xl font-bold text-green-500">0</div>
+                    </div>
+                </div>
+
+                <div class="bg-card border border-border rounded-xl overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="border-b border-border text-slate-400">
+                            <tr><th class="px-6 py-4 font-medium">Roll No</th><th class="px-6 py-4 font-medium">Name</th><th class="px-6 py-4 font-medium">Present/Total</th><th class="px-6 py-4 font-medium">Status</th><th class="px-6 py-4 font-medium text-center">Classes Needed (to 80%)</th><th class="px-6 py-4 font-medium text-right">Action</th></tr>
+                        </thead>
+                        <tbody id="defaulter-table-body" class="divide-y divide-border text-slate-300">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="module-reports" class="module-content">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-1">Attendance Report</h2>
+                        <p id="report-summary" class="text-slate-400 text-sm">Complete attendance analysis</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <select id="report-subject-filter" onchange="renderReportsTable()" class="bg-[#090f1e] border border-border rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                            <option value="All">All Subjects</option>
+                        </select>
+                        <button onclick="exportCSV()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center">
+                            <i class="fa-solid fa-download mr-2"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-card border border-border rounded-xl overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="border-b border-border text-slate-400">
+                            <tr><th class="px-6 py-4 font-medium">Roll No</th><th class="px-6 py-4 font-medium">Name</th><th class="px-6 py-4 font-medium">Dept</th><th class="px-6 py-4 font-medium">Present/Total</th><th class="px-6 py-4 font-medium">Percentage</th><th class="px-6 py-4 font-medium text-right">Status</th></tr>
+                        </thead>
+                        <tbody id="report-table-body" class="divide-y divide-border text-slate-300">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+    
+    <div id="toast" class="fixed bottom-6 right-6 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg shadow-green-500/20 transform translate-y-20 opacity-0 transition-all duration-300 z-[1000] flex items-center text-sm font-semibold">
+        <i class="fa-solid fa-circle-check mr-2.5"></i> Action Successful
+    </div>
+
+    <script>
+        let loggedInBranch = localStorage.getItem('sa_current_branch') || null;
+        let students = [];
+        let attendance = {}; 
+        let alertHistory = []; 
+
+        const branchSubjects = {
+            'bcca': ['Programming in C', 'Financial Accounting', 'Business Economics', 'IT Infrastructure'],
+            'bca': ['Data Structures', 'Web Development', 'Mathematics', 'Computer Networks'],
+            'mca': ['Advanced Java', 'Machine Learning', 'Cloud Computing', 'Software Engineering']
+        };
+
+        function getDbKeys() {
+            return {
+                students: 'sa_full_students_' + loggedInBranch,
+                attendance: 'sa_full_attendance_' + loggedInBranch,
+                alerts: 'sa_full_alerts_' + loggedInBranch 
+            };
+        }
+
+        function loadData() {
+            if(!loggedInBranch) return;
+            const keys = getDbKeys();
+            students = JSON.parse(localStorage.getItem(keys.students)) || [];
+            attendance = JSON.parse(localStorage.getItem(keys.attendance)) || {};
+            alertHistory = JSON.parse(localStorage.getItem(keys.alerts)) || [];
+        }
+
+        function saveData() {
+            if(!loggedInBranch) return;
+            const keys = getDbKeys();
+            localStorage.setItem(keys.students, JSON.stringify(students));
+            localStorage.setItem(keys.attendance, JSON.stringify(attendance));
+            localStorage.setItem(keys.alerts, JSON.stringify(alertHistory)); 
+        }
+
+        function populateSubjects() {
+            const subjects = branchSubjects[loggedInBranch] || ['Core Subject 1', 'Core Subject 2', 'Lab Session'];
+            
+            const pickerHtml = subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            const attPicker = document.getElementById('attendance-subject-picker');
+            if(attPicker) attPicker.innerHTML = pickerHtml;
+
+            const filterHtml = `<option value="All">All Subjects</option>` + pickerHtml;
+            ['student-subject-filter', 'defaulter-subject-filter', 'report-subject-filter'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.innerHTML = filterHtml;
+            });
+        }
+
+        function login() {
+            const user = document.getElementById('login-user').value.trim().toLowerCase();
+            const pass = document.getElementById('login-pass').value;
+            
+            if(!user) return showToast('Please enter a branch username!', 'red');
+            if(pass !== 'admin') return showToast('Invalid password!', 'red');
+            
+            loggedInBranch = user;
+            localStorage.setItem('sa_current_branch', user);
+            
+            document.getElementById('login-module').style.display = 'none';
+            loadData();
+            populateSubjects();
+            
+            const picker = document.getElementById('attendance-date-picker');
+            if(!picker.value) picker.valueAsDate = new Date();
+            
+            loadAttendanceForDate();
+            switchTab('dashboard');
+            showToast(`Logged into ${user.toUpperCase()} successfully!`);
+        }
+
+        function logout() {
+            localStorage.removeItem('sa_current_branch');
+            window.location.reload(); 
+        }
+
+        let activeModule = 'dashboard';
+        const tabTitles = {
+            'dashboard': 'Dashboard Overview',
+            'students': 'Student Management',
+            'attendance': 'Attendance Entry',
+            'defaulters': 'Defaulter Detection (< 50%)',
+            'reports': 'Complete Attendance Report'
+        };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.module-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-[#1e293b]', 'text-blue-400');
+                el.classList.add('text-slate-400');
+            });
+            
+            document.getElementById(`module-${tabId}`).classList.add('active');
+            const activeBtn = document.querySelector(`.nav-btn[data-target="${tabId}"]`);
+            if(activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('bg-[#1e293b]', 'text-blue-400');
+            }
+            
+            document.getElementById('header-title').innerText = tabTitles[tabId] + (loggedInBranch ? ` (${loggedInBranch.toUpperCase()})` : '');
+            activeModule = tabId;
+            renderAll();
+        }
+
+        function getStudentStats(studentId, targetSubject = 'All') {
+            let totalClassesClasses = 0;
+            let attended = 0;
+            
+            for (let key in attendance) {
+                if (targetSubject !== 'All' && !key.endsWith('_' + targetSubject)) continue;
+
+                totalClassesClasses++;
+                if (attendance[key][studentId] === true) attended++;
+            }
+
+            const percentage = totalClassesClasses === 0 ? 100 : Math.round((attended / totalClassesClasses) * 100);
+            
+            let classesNeeded = 0;
+            if (percentage < 80) {
+                // Modified Formula for 80% Safe Zone Target
+                classesNeeded = Math.ceil((0.80 * totalClassesClasses - attended) / 0.20);
+            }
+
+            return { totalClasses: totalClassesClasses, attended, percentage, classesNeeded };
+        }
+
+        let editStudentId = null;
+
+        function showAddForm() { 
+            editStudentId = null;
+            document.getElementById('new-roll').value = ''; 
+            document.getElementById('new-name').value = ''; 
+            document.getElementById('new-dept').value = ''; 
+            document.getElementById('new-email').value = '';
+            
+            document.getElementById('form-title').innerText = 'Register New Student';
+            document.getElementById('submit-student-btn').innerText = 'Register';
+            document.getElementById('add-student-form').classList.remove('hidden'); 
+        }
+
+        function hideAddForm() { document.getElementById('add-student-form').classList.add('hidden'); }
+
+        function editStudent(id) {
+            const student = students.find(s => s.id === id);
+            if (!student) return;
+            
+            editStudentId = id;
+            document.getElementById('new-roll').value = student.roll;
+            document.getElementById('new-name').value = student.name;
+            document.getElementById('new-dept').value = student.dept;
+            document.getElementById('new-email').value = student.email || '';
+            
+            document.getElementById('form-title').innerText = 'Edit Student';
+            document.getElementById('submit-student-btn').innerText = 'Update';
+            document.getElementById('add-student-form').classList.remove('hidden');
+        }
+
+        function addStudent() {
+            const roll = document.getElementById('new-roll').value;
+            const name = document.getElementById('new-name').value;
+            const dept = document.getElementById('new-dept').value;
+            const email = document.getElementById('new-email').value;
+            
+            if (!roll || !name) return showToast('Roll No and Name are required!', 'red');
+
+            if (editStudentId) {
+                const index = students.findIndex(s => s.id === editStudentId);
+                if (index !== -1) {
+                    students[index].roll = roll;
+                    students[index].name = name;
+                    students[index].dept = dept;
+                    students[index].email = email;
+                }
+                showToast('Student Updated Successfully!');
+                editStudentId = null;
+            } else {
+                students.push({ id: Date.now().toString(), roll, name, dept, email });
+                showToast('Student Registered Successfully!');
+            }
+            
+            saveData();
+            document.getElementById('new-roll').value = ''; 
+            document.getElementById('new-name').value = ''; 
+            document.getElementById('new-dept').value = ''; 
+            document.getElementById('new-email').value = '';
+            hideAddForm(); 
+            renderAll();
+        }
+
+        function deleteStudent(id) {
+            if(confirm("Delete this student permanently?")) {
+                students = students.filter(s => s.id !== id);
+                saveData(); renderAll(); showToast('Student Removed', 'red');
+            }
+        }
+
+        let currentAttendanceEntries = {};
+
+        function getAttendanceKey() {
+            const dateStr = document.getElementById('attendance-date-picker').value;
+            const subjStr = document.getElementById('attendance-subject-picker').value;
+            if(!dateStr || !subjStr) return null;
+            return `${dateStr}_${subjStr}`;
+        }
+
+        function loadAttendanceForDate() {
+            const key = getAttendanceKey();
+            if(!key) return;
+
+            const dateStr = document.getElementById('attendance-date-picker').value;
+            const subjStr = document.getElementById('attendance-subject-picker').value;
+            
+            document.getElementById('attendance-date-text').innerText = `Mark attendance for ${new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • ${subjStr}`;
+            
+            if (attendance[key]) {
+                currentAttendanceEntries = {...attendance[key]};
+                document.getElementById('duplicate-warning').classList.remove('hidden');
+                document.getElementById('duplicate-warning').classList.add('flex');
+            } else {
+                currentAttendanceEntries = {};
+                document.getElementById('duplicate-warning').classList.remove('flex');
+                document.getElementById('duplicate-warning').classList.add('hidden');
+            }
+            renderAttendanceTable();
+        }
+
+        function toggleAttendance(studentId, isPresent) { currentAttendanceEntries[studentId] = isPresent; renderAttendanceTable(); }
+        function bulkAttendance(isPresent) { students.forEach(s => { currentAttendanceEntries[s.id] = isPresent; }); renderAttendanceTable(); }
+
+        function saveAttendance() {
+            const key = getAttendanceKey();
+            if(!key) return showToast("Please select both Date and Subject", "red");
+            
+            attendance[key] = {...currentAttendanceEntries};
+            saveData(); 
+            showToast(`Saved for ${document.getElementById('attendance-subject-picker').value}`); 
+            loadAttendanceForDate(); 
+        }
+
+        function sendAlert(studentId) { 
+            const student = students.find(s => s.id === studentId);
+            if(!student || !student.email) return showToast(`No Email for ${student ? student.name : 'this student'}!`, 'red');
+
+            const subj = document.getElementById('defaulter-subject-filter') ? document.getElementById('defaulter-subject-filter').value : 'All';
+            const stats = getStudentStats(studentId, subj);
+            const subjectText = subj === 'All' ? 'Overall Attendance' : `Attendance for ${subj}`;
+
+            let breakdownText = "";
+            const allSubjects = branchSubjects[loggedInBranch] || [];
+            allSubjects.forEach(s => {
+                const sStats = getStudentStats(studentId, s);
+                if (sStats.totalClasses > 0) { 
+                    breakdownText += `\n- ${s}: ${sStats.percentage}% (${sStats.attended}/${sStats.totalClasses} lectures)`;
+                }
+            });
+
+            if (breakdownText === "") breakdownText = "\n- No class data available yet.";
+
+            const subject = encodeURIComponent(`URGENT: Low Attendance Warning - ${student.name}`);
+            const body = encodeURIComponent(
+`Dear ${student.name},
+
+This is an official warning from the Attendance System.
+Your ${subjectText} is at ${stats.percentage}%, which is below the safe 80% threshold.
+
+You need to attend ${stats.classesNeeded} more consecutive lectures to be in the safe zone.
+
+--- SUBJECT-WISE BREAKDOWN ---${breakdownText}
+------------------------------
+
+Please ensure regular attendance to avoid strict actions.
+
+Regards,
+Admin - SmartAttend Pro (${loggedInBranch ? loggedInBranch.toUpperCase() : ''})`
+            );
+
+            const dateSent = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            alertHistory.unshift({
+                id: Date.now(),
+                studentName: student.name,
+                subject: subj === 'All' ? 'Overall' : subj,
+                date: dateSent
+            });
+            saveData();
+
+            window.location.href = `mailto:${student.email}?subject=${subject}&body=${body}`;
+            showToast(`Opening Email for ${student.name}...`, 'blue');
+            updateDashboard(); 
+        }
+
+        function exportCSV() {
+            const subj = document.getElementById('report-subject-filter') ? document.getElementById('report-subject-filter').value : 'All';
+            const filterName = subj === 'All' ? 'Overall' : subj.replace(/\s+/g, '_');
+            
+            let csv = `Roll No,Name,Department,Email,Lectures Attended,Total Lectures,Percentage (${subj}),Status,Lectures Needed For 80%\n`;
+            students.forEach(s => {
+                const stats = getStudentStats(s.id, subj);
+                const status = stats.percentage < 50 ? "Defaulter" : (stats.percentage < 80 ? "Warning" : "Safe");
+                csv += `${s.roll},${s.name},${s.dept},${s.email || '-'},${stats.attended},${stats.totalClasses},${stats.percentage}%,${status},${stats.classesNeeded}\n`;
+            });
+
+            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csv);
+            const link = document.createElement("a");link.setAttribute("href", encodedUri);link.setAttribute("download", `Report_${loggedInBranch}_${filterName}.csv`);link.click();
+            showToast('CSV Downloaded!');
+        }
+
+        function showToast(msg, type = 'green') {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.remove('bg-green-500', 'bg-red-500', 'bg-blue-500', 'translate-y-20', 'opacity-0');
+            
+            if(type === 'red') toast.classList.add('bg-red-500');
+            else if(type === 'blue') toast.classList.add('bg-blue-500');
+            else toast.classList.add('bg-green-500');
+            
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+        }
+
+        function renderAll() {
+            if (activeModule === 'students') renderStudentsTable();
+            if (activeModule === 'attendance') renderAttendanceTable();
+            if (activeModule === 'defaulters') renderDefaultersTable();
+            if (activeModule === 'reports') renderReportsTable();
+            updateDashboard(); 
+        }
+
+        function renderStudentsTable() {
+            const subj = document.getElementById('student-subject-filter') ? document.getElementById('student-subject-filter').value : 'All';
+            const searchQuery = document.getElementById('student-search-input') ? document.getElementById('student-search-input').value.toLowerCase() : '';
+            
+            const filteredStudents = students.filter(s => 
+                s.name.toLowerCase().includes(searchQuery) || 
+                s.roll.toLowerCase().includes(searchQuery)
+            );
+
+            document.getElementById('student-count').innerText = `${filteredStudents.length} students found`;
+            
+            document.getElementById('student-table-body').innerHTML = filteredStudents.map(s => {
+                const stats = getStudentStats(s.id, subj);
+                const pColor = stats.totalClasses === 0 ? 'text-slate-400' : (stats.percentage < 50 ? 'text-red-500' : (stats.percentage >= 80 ? 'text-green-500' : 'text-yellow-500'));
+                const pText = stats.totalClasses === 0 ? 'No Classes' : `${stats.percentage}%`;
+
+                return `
+                <tr class="hover:bg-slate-800/30 transition border-b border-border/50">
+                    <td class="px-6 py-4 font-bold text-white">${s.roll}</td>
+                    <td class="px-6 py-4 font-bold text-white">${s.name}</td>
+                    <td class="px-6 py-4 text-slate-400">${s.email || '-'}</td>
+                    <td class="px-6 py-4 font-bold ${pColor}">${pText}</td>
+                    <td class="px-6 py-4 text-right">
+                        <i onclick="editStudent('${s.id}')" class="fa-solid fa-pen text-slate-400 hover:text-white cursor-pointer mr-4"></i>
+                        <i onclick="deleteStudent('${s.id}')" class="fa-regular fa-trash-can text-red-500 hover:text-red-400 cursor-pointer"></i>
+                    </td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="5" class="text-center py-12 text-slate-500">No students match your search.</td></tr>`;
+        }
+
+        function renderAttendanceTable() {
+            document.getElementById('attendance-table-body').innerHTML = students.map(s => {
+                const isP = currentAttendanceEntries[s.id] === true;
+                const isA = currentAttendanceEntries[s.id] === false;
+                return `
+                <tr class="hover:bg-slate-800/30 transition border-b border-border/50">
+                    <td class="px-6 py-4 font-bold text-white">${s.roll}</td>
+                    <td class="px-6 py-4 font-bold text-white">${s.name}</td>
+                    <td class="px-6 py-4 text-slate-400 capitalize">${s.dept}</td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex gap-1.5 justify-end">
+                            <button onclick="toggleAttendance('${s.id}', true)" class="px-4 py-1.5 rounded-l-md font-bold text-sm transition ${isP ? 'bg-blue-500 text-white' : 'bg-transparent border border-blue-500/30 text-blue-500'}">Present</button>
+                            <button onclick="toggleAttendance('${s.id}', false)" class="px-4 py-1.5 rounded-r-md font-bold text-sm transition -ml-1 ${isA ? 'bg-red-500 text-white' : 'bg-transparent border border-red-500/30 text-red-500'}">Absent</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="4" class="text-center py-12 text-slate-500">Add students first in the Students module.</td></tr>`;
+        }
+
+        function renderDefaultersTable() {
+            const subj = document.getElementById('defaulter-subject-filter') ? document.getElementById('defaulter-subject-filter').value : 'All';
+            let defs = 0; let warns = 0; let safe = 0;
+            
+            const rows = students.map(s => {
+                const stats = getStudentStats(s.id, subj);
+                if (stats.percentage < 50 && stats.totalClasses > 0) defs++;
+                else if (stats.percentage < 80 && stats.totalClasses > 0) warns++;
+                else if (stats.totalClasses > 0) safe++;
+                
+                const badge = stats.totalClasses === 0 ? '-' :
+                    (stats.percentage < 50 ? `<span class="bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-1 rounded-md text-xs flex items-center w-fit"><i class="fa-solid fa-circle-exclamation mr-1.5"></i> ${stats.percentage}% Defaulter</span>`
+                    : (stats.percentage < 80 ? `<span class="bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-2.5 py-1 rounded-md text-xs flex items-center w-fit"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> ${stats.percentage}% Warning</span>`
+                    : `<span class="bg-green-500/10 text-green-500 border border-green-500/20 px-2.5 py-1 rounded-md text-xs flex items-center w-fit"><i class="fa-regular fa-circle-check mr-1.5"></i> ${stats.percentage}% Safe</span>`));
+
+                const alertBtn = (stats.percentage < 80 && stats.totalClasses > 0) ? `<button onclick="sendAlert('${s.id}')" class="bg-transparent border border-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-medium"><i class="fa-regular fa-bell mr-1"></i> Alert</button>` : '';
+
+                return `
+                <tr class="hover:bg-slate-800/30 transition border-b border-border/50">
+                    <td class="px-6 py-4 font-bold text-white">${s.roll}</td>
+                    <td class="px-6 py-4 font-bold text-white">${s.name}</td>
+                    <td class="px-6 py-4 text-slate-300">${stats.attended}/${stats.totalClasses}</td>
+                    <td class="px-6 py-4">${badge}</td>
+                    <td class="px-6 py-4 text-center ${stats.percentage < 80 && stats.totalClasses > 0 ? 'text-red-500' : 'text-slate-500'}">${stats.totalClasses > 0 && stats.percentage < 80 ? `Needs ${stats.classesNeeded} classes` : '—'}</td>
+                    <td class="px-6 py-4 text-right">${alertBtn}</td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="6" class="text-center py-12 text-slate-500">Add students and attendance data first.</td></tr>`;
+            
+            document.getElementById('defaulter-summary').innerText = `${defs} defaulters, ${warns} warnings out of ${students.length} students`;
+            document.getElementById('stat-defaulters').innerText = defs;
+            document.getElementById('stat-warnings').innerText = warns;
+            document.getElementById('stat-safe').innerText = safe;
+            document.getElementById('defaulter-table-body').innerHTML = rows;
+        }
+
+        function renderReportsTable() {
+            const subj = document.getElementById('report-subject-filter') ? document.getElementById('report-subject-filter').value : 'All';
+            const rows = students.map(s => {
+                const stats = getStudentStats(s.id, subj);
+                
+                const isD = stats.totalClasses > 0 && stats.percentage < 50;
+                const isW = stats.totalClasses > 0 && stats.percentage >= 50 && stats.percentage < 80;
+                
+                let badgeClass = 'bg-green-500/10 text-green-500 border-green-500/20';
+                let badgeText = 'safe';
+                if(isD) { badgeClass = 'bg-red-500/10 text-red-500 border-red-500/20'; badgeText = 'defaulter'; }
+                else if(isW) { badgeClass = 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'; badgeText = 'warning'; }
+                
+                return `
+                <tr class="hover:bg-slate-800/30 transition border-b border-border/50">
+                    <td class="px-6 py-4 font-bold text-white">${s.roll}</td>
+                    <td class="px-6 py-4 font-bold text-white">${s.name}</td>
+                    <td class="px-6 py-4 text-slate-400 capitalize">${s.dept}</td>
+                    <td class="px-6 py-4 text-slate-300">${stats.attended}/${stats.totalClasses}</td>
+                    <td class="px-6 py-4 font-bold text-white">${stats.totalClasses === 0 ? '0%' : stats.percentage + '%'}</td>
+                    <td class="px-6 py-4 text-right"><span class="${badgeClass} px-2.5 py-1 rounded-full text-xs font-semibold capitalize border">${stats.totalClasses === 0 ? '-' : badgeText}</span></td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="6" class="text-center py-12 text-slate-500">No data available yet.</td></tr>`;
+
+            document.getElementById('report-table-body').innerHTML = rows;
+        }
+
+        function updateDashboard() {
+            const totalStudents = students.length;
+            const classesHeld = Object.keys(attendance).length;
+            let defaulters = 0; let attendedTotal = 0; let totalPossible = 0;
+            let chartLabels = []; let chartData = [];
+
+            students.forEach(s => {
+                const stats = getStudentStats(s.id, 'All');
+                if (stats.percentage < 50 && stats.totalClasses > 0) defaulters++;
+                attendedTotal += stats.attended;
+                totalPossible += stats.totalClasses;
+                chartLabels.push(s.roll);
+                chartData.push(stats.percentage);
+            });
+
+            const avgP = totalPossible === 0 ? 0 : Math.round((attendedTotal / totalPossible) * 100);
+            document.getElementById('dash-total').innerText = totalStudents;
+            document.getElementById('dash-classes').innerText = classesHeld;
+            document.getElementById('dash-defaulters').innerText = defaulters;
+            document.getElementById('dash-avg').innerText = avgP + '%';
+
+            const alertListEl = document.getElementById('alert-list');
+            if (alertHistory.length === 0) {
+                alertListEl.innerHTML = '<div class="flex items-center justify-center h-48 text-slate-500 text-sm">No alerts sent yet</div>';
+            } else {
+                alertListEl.innerHTML = alertHistory.slice(0, 10).map(a => `
+                    <div class="flex items-center justify-between border-b border-border/50 pb-2 mb-2">
+                        <div class="flex items-center">
+                            <i class="fa-regular fa-envelope text-blue-500 mr-3"></i>
+                            <div>
+                                <div class="text-white font-medium text-xs">${a.studentName}</div>
+                                <div class="text-[10px] text-slate-500">${a.subject} Alert</div>
+                            </div>
+                        </div>
+                        <div class="text-[10px] text-slate-400">${a.date}</div>
+                    </div>
+                `).join('');
+            }
+
+            const ctx = document.getElementById('barChart');
+            if(ctx && chartLabels.length > 0) {
+                if(window.myDashChart) window.myDashChart.destroy();
+                window.myDashChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: chartLabels, datasets: [{ label: 'Overall Attendance %', data: chartData, backgroundColor: '#22c55e', barPercentage: 0.5, categoryPercentage: 0.8 }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, ticks: { stepSize: 25, color: '#64748b' }, grid: { color: '#1e293b' }, border: { display: false } }, x: { ticks: { color: '#64748b' }, grid: { display: false }, border: { display: true, color: '#64748b' } } }, plugins: { legend: { display: false } } }
+                });
+            } else if(ctx) {
+                if(window.myDashChart) window.myDashChart.destroy();
+                const context = ctx.getContext('2d');context.fillStyle = '#1e293b';context.textAlign='center';context.fillText("Mark attendance to generate chart", 150, 100);
+            }
+        }
+
+        window.onload = () => {
+            if (loggedInBranch) {
+                document.getElementById('login-module').style.display = 'none';
+                loadData();
+                populateSubjects();
+                const picker = document.getElementById('attendance-date-picker');
+                picker.valueAsDate = new Date();
+                loadAttendanceForDate(); 
+                switchTab('dashboard'); 
+            } else {
+                document.getElementById('login-module').style.display = 'flex';
+            }
+        };
+    </script>
+</body>
+</html>
